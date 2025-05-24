@@ -14,9 +14,9 @@ def test_chat_endpoint_non_streaming(client):
             "stream": False
         }
     )
-    
+
     assert response.status_code == 200
-    
+
     data = response.json()
     assert data["object"] == "chat.completion"
     assert data["model"] == "fastapi-chat"
@@ -35,10 +35,10 @@ def test_chat_endpoint_streaming(client):
             "stream": True
         }
     )
-    
+
     assert response.status_code == 200
     assert "text/plain" in response.headers["content-type"]
-    
+
     # Check that response is streaming
     content = response.text
     assert "data: " in content
@@ -55,14 +55,14 @@ def test_chat_endpoint_validation_empty_message(client):
             "stream": True
         }
     )
-    
+
     assert response.status_code == 422  # Validation error
 
 
 def test_chat_endpoint_validation_long_message(client):
     """Test chat endpoint with message that's too long."""
     long_message = "a" * 2001  # Exceeds max_length of 2000
-    
+
     response = client.post(
         "/api/v1/chat",
         json={
@@ -70,7 +70,7 @@ def test_chat_endpoint_validation_long_message(client):
             "stream": True
         }
     )
-    
+
     assert response.status_code == 422  # Validation error
 
 
@@ -82,7 +82,7 @@ def test_chat_endpoint_different_responses(client):
         ("what time is it?", "time"),
         ("random question", "You said")
     ]
-    
+
     for message, expected_keyword in test_cases:
         response = client.post(
             "/api/v1/chat",
@@ -91,7 +91,7 @@ def test_chat_endpoint_different_responses(client):
                 "stream": False
             }
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         response_content = data["choices"][0]["message"]["content"]
@@ -101,16 +101,16 @@ def test_chat_endpoint_different_responses(client):
 def test_chat_info_endpoint(client):
     """Test chat info endpoint."""
     response = client.get("/api/v1/chat/info")
-    
+
     assert response.status_code == 200
-    
+
     data = response.json()
     assert data["service"] == "fastapi-chat"
     assert data["version"] == "0.1.0"
     assert "description" in data
     assert "supported_features" in data
     assert "usage" in data
-    
+
     # Check supported features
     features = data["supported_features"]
     assert "streaming_responses" in features
@@ -127,20 +127,20 @@ def test_chat_endpoint_streaming_format(client):
             "stream": True
         }
     )
-    
+
     assert response.status_code == 200
     content = response.text
-    
+
     # Check for proper SSE format
     lines = content.split('\n')
     data_lines = [line for line in lines if line.startswith('data: ')]
-    
+
     # Should have multiple data lines
     assert len(data_lines) > 1
-    
+
     # Last line should be [DONE]
     assert any("[DONE]" in line for line in data_lines)
-    
+
     # Check that JSON chunks are valid
     json_chunks = []
     for line in data_lines:
@@ -151,10 +151,10 @@ def test_chat_endpoint_streaming_format(client):
             except json.JSONDecodeError:
                 if not line.endswith('[DONE]'):
                     pytest.fail(f"Invalid JSON in line: {line}")
-    
+
     # Should have at least one valid JSON chunk
     assert len(json_chunks) > 0
-    
+
     # Check structure of first chunk
     first_chunk = json_chunks[0]
     assert first_chunk["object"] == "chat.completion.chunk"
@@ -174,7 +174,7 @@ async def test_chat_endpoint_logs(client, caplog):
                 "stream": True
             }
         )
-    
+
     assert response.status_code == 200
     assert "Chat endpoint called" in caplog.text
     assert "Processing chat message" in caplog.text

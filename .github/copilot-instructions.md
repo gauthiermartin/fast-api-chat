@@ -14,4 +14,3 @@
 2. Add the database as a dependency of the project
 3. Download the dataset from the following link: https://www.kaggle.com/datasets/litvinenko630/insurance-claims/data
 4. Inspect the dataset by using pandas and create a table in the database that matches the dataset structure using SQL model (https://sqlmodel.tiangolo.com/)
-
