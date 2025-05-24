@@ -1,0 +1,23 @@
+services:
+  fastapi-chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi-chat-app
+    ports:
+      - "8000:80"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./app:/app/app:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  default:
+    name: fastapi-chat-network
