@@ -2,7 +2,7 @@
 Database models using SQLModel for the insurance claims system.
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from decimal import Decimal
 from typing import Optional
 from sqlmodel import SQLModel, Field, create_engine
@@ -52,16 +52,12 @@ class InsuranceClaim(SQLModel, table=True):
     is_fraud: bool = Field(default=False, description="Fraud indicator")
 
     # Metadata
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Record creation timestamp")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), description="Record creation timestamp")
     updated_at: Optional[datetime] = Field(default=None, description="Record last update timestamp")
 
     class Config:
         """Pydantic configuration."""
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
-        }
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "claim_id": "CLM00000001",
                 "policy_id": "POL000001",

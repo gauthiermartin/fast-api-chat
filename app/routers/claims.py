@@ -8,9 +8,53 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import Session, select
 from decimal import Decimal
 from datetime import datetime, UTC
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, Field
 
 from app.models.database import InsuranceClaim, get_engine
+
+
+class InsuranceClaimResponse(BaseModel):
+    """Response model for insurance claims."""
+    claim_id: str
+    policy_id: str
+    customer_age: int
+    customer_gender: str
+    customer_state: str
+    vehicle_make: str
+    vehicle_model: str
+    vehicle_year: int
+    claim_date: datetime
+    claim_type: str
+    claim_amount: float  # Convert Decimal to float
+    deductible: int
+    claim_status: str
+    annual_premium: float  # Convert Decimal to float
+    is_fraud: bool
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    @classmethod
+    def from_db_model(cls, db_model: InsuranceClaim) -> "InsuranceClaimResponse":
+        """Convert database model to response model."""
+        return cls(
+            claim_id=db_model.claim_id,
+            policy_id=db_model.policy_id,
+            customer_age=db_model.customer_age,
+            customer_gender=db_model.customer_gender,
+            customer_state=db_model.customer_state,
+            vehicle_make=db_model.vehicle_make,
+            vehicle_model=db_model.vehicle_model,
+            vehicle_year=db_model.vehicle_year,
+            claim_date=db_model.claim_date,
+            claim_type=db_model.claim_type,
+            claim_amount=float(db_model.claim_amount),
+            deductible=db_model.deductible,
+            claim_status=db_model.claim_status,
+            annual_premium=float(db_model.annual_premium),
+            is_fraud=db_model.is_fraud,
+            created_at=db_model.created_at,
+            updated_at=db_model.updated_at
+        )
 
 
 class InsuranceClaimCreate(BaseModel):
@@ -73,7 +117,7 @@ def get_session():
         yield session
 
 
-@router.get("/", response_model=List[InsuranceClaim])
+@router.get("/", response_model=List[InsuranceClaimResponse])
 async def get_claims(
     session: Session = Depends(get_session),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -107,13 +151,13 @@ async def get_claims(
 
         # Execute query
         claims = session.exec(query).fetchall()
-        return claims
+        return [InsuranceClaimResponse.from_db_model(claim) for claim in claims]
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@router.get("/{claim_id}", response_model=InsuranceClaim)
+@router.get("/{claim_id}", response_model=InsuranceClaimResponse)
 async def get_claim_by_id(
     claim_id: str,
     session: Session = Depends(get_session)
@@ -124,7 +168,7 @@ async def get_claim_by_id(
         claim = session.get(InsuranceClaim, claim_id)
         if not claim:
             raise HTTPException(status_code=404, detail="Claim not found")
-        return claim
+        return InsuranceClaimResponse.from_db_model(claim)
 
     except HTTPException:
         raise
@@ -132,7 +176,7 @@ async def get_claim_by_id(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@router.post("/", response_model=InsuranceClaim)
+@router.post("/", response_model=InsuranceClaimResponse)
 async def create_claim(
     claim_data: InsuranceClaimCreate,
     session: Session = Depends(get_session)
@@ -171,7 +215,7 @@ async def create_claim(
         session.commit()
         session.refresh(claim)
 
-        return claim
+        return InsuranceClaimResponse.from_db_model(claim)
 
     except HTTPException:
         raise
@@ -180,7 +224,7 @@ async def create_claim(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@router.put("/{claim_id}", response_model=InsuranceClaim)
+@router.put("/{claim_id}", response_model=InsuranceClaimResponse)
 async def update_claim(
     claim_id: str,
     updated_data: InsuranceClaimUpdate,
@@ -211,7 +255,7 @@ async def update_claim(
         session.commit()
         session.refresh(claim)
 
-        return claim
+        return InsuranceClaimResponse.from_db_model(claim)
 
     except HTTPException:
         raise

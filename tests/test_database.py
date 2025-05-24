@@ -8,7 +8,6 @@ from datetime import datetime
 from sqlmodel import Session, create_engine, SQLModel
 from pydantic import ValidationError
 from app.models.database import InsuranceClaim, get_engine
-from app.routers.claims import get_session
 
 
 # Test database engine (in-memory SQLite for tests)
@@ -191,7 +190,7 @@ def test_claim_json_serialization(sample_claim):
 
 def test_claim_config_example():
     """Test that the claim model's example configuration is valid."""
-    config_example = InsuranceClaim.Config.schema_extra["example"]
+    config_example = InsuranceClaim.Config.json_schema_extra["example"]
 
     # Verify example has all required fields
     required_fields = [
